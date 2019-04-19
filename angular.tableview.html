@@ -14,7 +14,7 @@
 <script type="text/ng-template" id="tableview.head.cell.select">
   <label><input
     type="checkbox"
-    ng-checked="isRowsSelected()"
+    ng-checked="areRowsSelected()"
     ng-click="onSelectPageRows($event)"
   /><i class="ui-checkbox"></i></label>
 </script>
@@ -103,7 +103,7 @@
               $cell = $row[$column.field];
               $mode={edition:false, value:$cell};
             "
-            ng-click="$mode.edition=$column.editable?true:false"
+            ng-click="$mode.edition=!!$column.editable"
             ng-include="$mode.edition ? templateName('body.cell.edit', $index) : templateName('body.cell', $index)"
             class="{{
               $column.name ? 'column-'+$column.name : ''

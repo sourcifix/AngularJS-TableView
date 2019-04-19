@@ -35,6 +35,7 @@
       var that = this;
 
       this.theme = null;
+      // noinspection JSUnusedGlobalSymbols
       this.$get = function get$() {
         return that;
       };
@@ -49,13 +50,17 @@
         restrict: 'A',
 
         link: function link($scope, $element, $attributes) {
-          if ($scope.$eval($attributes.autoFocus) !== false) {
-            var element = $element[0];
-            $timeout(function () {
-              $scope.$emit('focus', element);
-              element.focus();
-            });
+
+          if (false === $scope.$eval($attributes.autoFocus)) {
+            return;
           }
+
+          var element = $element[0];
+          $timeout(function () {
+            $scope.$emit('focus', element);
+            element.focus();
+          });
+
         }
 
       };
@@ -70,6 +75,10 @@
         isund = angular.isUndefined, isdef = angular.isDefined,
         isstr = angular.isString, isnum = angular.isNumber
       ;
+
+      var eq = function eq(value1, value2) {
+        return ('' + value1) === ('' + value2);
+      };
 
       var MODULE_NAME = 'angular.tableview';
 
@@ -102,52 +111,59 @@
             $scope.$provider = $tableView;
             $scope.$scope = $scope.$parent;
             $scope.Math = Math;
+            $scope.theme = '';
             $scope.tableview.rows = [];
             $scope.tableview.amount = 0;
             $scope.tableview.pages = 1;
-            $scope.theme = '';
-
             $scope.tableview.limits = $scope.tableview.limits || [10, 25, 50, 100];
 
-            var updateOptions = function updateOptions() {
+            var updateOptions = (function updateOptions() {
 
-              $scope.tableview.selection = $scope.tableview.selection || [];
-              $scope.tableview.request = $scope.tableview.request || {};
-              $scope.tableview.request.page = $scope.tableview.request.page || 1;
-              $scope.tableview.request.limit = $scope.tableview.request.limit || $scope.tableview.limits[0];
-              $scope.tableview.request.order = $scope.tableview.request.order || [];
-              $scope.tableview.request.like = $scope.tableview.request.like || {};
+              var tv = $scope.tableview;
 
-              $scope.theme = $scope.tableviewTheme || $scope.tableview.theme || $scope.$provider.theme || '';
+              tv.selection = tv.selection || [];
+              tv.request = tv.request || {};
+              tv.request.page = tv.request.page || 1;
+              tv.request.limit = tv.request.limit || tv.limits[0];
+              tv.request.order = tv.request.order || [];
+              tv.request.like = tv.request.like || {};
+
+              $scope.theme = $scope.tableviewTheme || tv.theme || $scope.$provider.theme || '';
               $element.attr('theme', $scope.theme);
 
               var on = 'addClass', off = 'removeClass';
               $element[/mobile|android|ip[ao]d|iphone/i.test(navigator.userAgent) ? on : off]('-mobile-');
-              $element[$scope.tableview.scrollable ? on : off]('scrollable');
-            };
+              $element[tv.scrollable ? on : off]('scrollable');
+            });
 
-            $scope.exec = function exec() {
+            $scope.exec = (function exec() {
 
               updateOptions();
 
-              for (var key in $scope.tableview.columns) {
+              var tv = $scope.tableview, cols = tv.columns;
 
-                if ($scope.tableview.columns[key].sortable) {
-                  var v = $scope.getSort($scope.tableview.columns[key].field);
-                  $scope.tableview.columns[key].sorting = (v && v.value ? v.value : void 0);
+              Object.keys(cols).forEach(function forEachKey(key) {
+
+                var col = cols[key];
+
+                if (col.sortable) {
+                  var info = $scope.sortOf(col.field);
+                  col.sorting = (info && info.value ? info.value : void 0);
                 } else {
-                  delete $scope.tableview.columns[key].sorting;
+                  delete col.sorting;
                 }
 
-              }
+              });
 
-              $scope.tableview.provider($scope.tableview.request, function provider(response) {
+              tv.provider(tv.request, function provider(response) {
 
-                $scope.tableview.rows = response.rows;
-                $scope.tableview.amount = response.amount;
-                $scope.tableview.pages = Math.ceil(response.amount / (response.limit || 1));
-                $scope.tableview.request.page = response.page;
-                $scope.tableview.request.limit = response.limit;
+                var tv = $scope.tableview;
+
+                tv.rows = response.rows;
+                tv.amount = response.amount;
+                tv.pages = Math.ceil(response.amount / (response.limit || 1));
+                tv.request.page = response.page;
+                tv.request.limit = response.limit;
 
                 var $node = $element[0], $scroller = $node.querySelector('.holder.scroller');
 
@@ -156,113 +172,104 @@
                 }
 
               });
-            };
+            });
 
             // Execution function sharing for external calls (filters extending logic)
             $scope.tableview.exec = $scope.exec;
 
-            $scope.getColumnConfigByField = function getColumnConfigByField(field) {
+            $scope.fieldInfo = (function fieldInfo(field) {
 
-              var columns = $scope.tableview.columns;
+              return $scope.tableview.columns.reduce(function reducer(result, config, index) {
 
-              for (var key in columns) {
-                if (columns[key].field === field) {
-                  return {index: key * 1, config: columns[key]};
-                }
-              }
-            };
+                return result ? result : (field === config.field ? {index: index, config: config} : void 0);
 
-            $scope.getSort = function getSort(field) {
+              }, void 0);
 
-              var column = $scope.getColumnConfigByField(field);
 
-              if (column && column.config.sortable) {
+            });
 
-                var r = $scope.tableview.request.order;
+            $scope.sortOf = (function sortOf(field) {
 
-                for (var i = 0; i < r.length; i += 1) {
-                  if (r[i] && r[i].field && r[i].field === field) {
-                    return {
-                      index: i,
-                      value: r[i].sorting
-                    };
-                  }
-                }
+              var info = $scope.fieldInfo(field);
 
-                return false;
-              }
-
-            };
-
-            $scope.switchSort = function switchSort(field) {
-
-              var column = $scope.getColumnConfigByField(field);
-
-              if (column && column.config.sortable) {
-                var v = {field: field};
-                var sorting = $scope.getSort(field);
-                if (sorting === false) { // Sortable but not sorted
-                  // set DESC
-                  v.sorting = 'DESC';
-                  if (!$scope.tableview.multisorting) {
-                    $scope.tableview.request.order = [v];
-                  } else {
-                    $scope.tableview.request.order.push(v);
-                  }
-                } else if (sorting && 'DESC' === sorting.value) {
-                  // set ASC
-                  v.sorting = 'ASC';
-                  if (!$scope.tableview.multisorting) {
-                    $scope.tableview.request.order = [v];
-                  } else {
-                    $scope.tableview.request.order[sorting.index] = v;
-                  }
-                } else if (sorting && 'ASC' === sorting.value) {
-                  // remove
-                  if (!$scope.tableview.multisorting) {
-                    $scope.tableview.request.order = [];
-                  } else {
-                    $scope.tableview.request.order.splice(sorting.index, 1);
-                  }
-                }
-                $scope.exec();
-              }
-            };
-
-            $scope.like = function like($index) {
-
-              var field = $scope.tableview.columns[$index].field;
-              if (!field || !$scope.tableview.columns[$index].filterable) {
+              if (!info || !info.config.sortable) {
                 return;
               }
 
-              if (isstr($scope.tableview.request.like[field]) && !$scope.tableview.request.like[field].trim()) {
-                delete $scope.tableview.request.like[field];
+              var r = $scope.tableview.request.order;
+
+              for (var i = 0; i < r.length; i += 1) {
+                if (r[i] && r[i].field && r[i].field === field) {
+                  return {
+                    index: i,
+                    value: r[i].sorting
+                  };
+                }
               }
 
-              $scope.tableview.request.page = 1;
+              return false;
+
+            });
+
+            $scope.switchSort = (function switchSort(field) {
+
+              var col = $scope.fieldInfo(field);
+
+              if (!col || !col.config.sortable) {
+                return;
+              }
+
+              var info = ({field: field}), sorting = $scope.sortOf(field), tv = $scope.tableview, req = tv.request;
+
+              if (false === sorting) { // Sortable but not sorted
+                info.sorting = 'DESC';
+                (tv.multisorting ? req.order.push(info) : req.order = [info]);
+              } else if (sorting && 'DESC' === sorting.value) {
+                info.sorting = 'ASC';
+                (tv.multisorting ? req.order[sorting.index] = info : req.order = [info]);
+              } else if (sorting && 'ASC' === sorting.value) {
+                (tv.multisorting ? req.order.splice(sorting.index, 1) : req.order = []);
+              }
+
               $scope.exec();
 
-            };
+            });
 
-            $scope.validate = function validate($index, $row, $mode) {
+            $scope.like = (function like($index) {
 
-              var column = $scope.tableview.columns[$index];
+              var tv = $scope.tableview, field = tv.columns[$index].field, lk = tv.request.like;
 
-              var valid = function valid() {
-                return {message: '', status: true};
-              };
-
-              if (!column.editable || !isobj(column.editable)) {
-                $mode.validation = valid();
-                return true;
-              } else if (!isfun(column.editable.validate)) {
-                column.editable.validate = valid;
+              if (!field || !tv.columns[$index].filterable) {
+                return;
               }
 
-              var result = column.editable.validate(column, $row, column.field, $mode.value);
+              if (isstr(lk[field]) && !lk[field].trim()) {
+                delete lk[field];
+              }
+
+              tv.request.page = 1;
+              $scope.exec();
+
+            });
+
+            $scope.validate = (function validate($index, $row, $mode) {
+
+              var col = $scope.tableview.columns[$index];
+
+              var v = function validation() {
+                return ({message: '', status: true});
+              };
+
+              if (!col.editable || !isobj(col.editable)) {
+                $mode.validation = v();
+                return true;
+              } else if (!isfun(col.editable.validate)) {
+                col.editable.validate = v;
+              }
+
+              var result = col.editable.validate(col, $row, col.field, $mode.value);
               if (isbln(result)) {
-                result = result ? valid() : {message: '', status: false};
+                result = result ? v() : ({message: '', status: false});
               }
 
               result = (result && isobj(result) ? result : {});
@@ -271,132 +278,132 @@
               $mode.validation = result;
 
               return result.status;
-            };
+            });
 
-            $scope.edition = function edition($index, $row, $mode) {
+            $scope.edition = (function edition($index, $row, $mode) {
 
-              var column = $scope.tableview.columns[$index];
-              var validation = $scope.validate($index, $row, $mode);
-              var changed = !!($mode.value !== $row[column.field]);
+              var col = $scope.tableview.columns[$index];
+              var valid = $scope.validate($index, $row, $mode);
+              var dirty = !!($mode.value !== $row[col.field]);
 
-              if (column.editable && validation) {
-                $row[column.field] = $mode.value;
+              if (col.editable && valid) {
+                $row[col.field] = $mode.value;
               } else {
-                $mode.value = $row[column.field];
+                $mode.value = $row[col.field];
               }
 
-              if (validation && changed && isobj(column.editable) && isfun(column.editable.change)) {
-                column.editable.change(column, $row, column.field, $row[column.field]);
+              if (valid && dirty && isobj(col.editable) && isfun(col.editable.change)) {
+                col.editable.change(col, $row, col.field, $row[col.field]);
               }
 
               $mode.edition = false;
-              $mode.validation = {message: '', status: true};
+              $mode.validation = ({message: '', status: true});
 
               return true;
 
-            };
+            });
 
-            $scope.next = function next() {
+            $scope.next = (function next() {
               $scope.tableview.request.page += 1;
               $scope.exec();
-            };
+            });
 
-            $scope.prev = function prev() {
+            $scope.prev = (function prev() {
               $scope.tableview.request.page -= 1;
               $scope.exec();
-            };
+            });
 
-            $scope.limit = function limit() {
+            $scope.limit = (function limit() {
               $scope.tableview.request.page = 1;
               $scope.tableview.request.limit *= 1;
               $scope.exec();
-            };
+            });
 
-            $scope.getRowSelectionIndex = function getRowSelectionIndex($row) {
-              if (
-                isstr($scope.tableview.selectableBy)
-                ||
-                !$scope.tableview.selectableBy.trim().length
-                ||
-                isund($row[$scope.tableview.selectableBy])
-              ) {
+            $scope.selectedRowIndex = (function selectedRowIndex($row) {
+
+              var tv = $scope.tableview;
+
+              if (isstr(tv.selectableBy) || !tv.selectableBy.trim().length || isund($row[tv.selectableBy])) {
                 return;
               }
 
-              var key = $scope.tableview.selectableBy;
-              var val = $row[$scope.tableview.selectableBy];
+              var key = tv.selectableBy, val = $row[tv.selectableBy];
 
-              for (var i = 0; i < $scope.tableview.selection.length; i += 1) {
-                if ($scope.tableview.selection[i][key] == val) {
-                  return i;
-                }
-              }
+              return tv.selection.findIndex(function findIndex(selection) {
+                return eq(val, selection[key]);
+              });
 
-              return -1;
+            });
 
-            };
+            $scope.switchRowSelection = (function switchRowSelection($row, sign) {
 
-            $scope.switchRowSelection = function switchRowSelection($row, sign) {
-
-              var index = $scope.getRowSelectionIndex($row);
+              var index = $scope.selectedRowIndex($row);
               if (!isnum(index)) {
                 return;
               }
 
+              var selection = $scope.tableview.selection;
+
               if (isbln(sign)) {
-                if (index < 0 && sign) {
-                  $scope.tableview.selection.push(angular.copy($row));
-                } else if (index >= 0 && !sign) {
-                  $scope.tableview.selection.splice(index, 1);
+                if (0 > index && sign) {
+                  selection.push(angular.copy($row));
+                } else if (0 <= index && !sign) {
+                  selection.splice(index, 1);
                 }
               } else {
-                if (index < 0) {
-                  $scope.tableview.selection.push(angular.copy($row));
+                if (0 > index) {
+                  selection.push(angular.copy($row));
                 } else {
-                  $scope.tableview.selection.splice(index, 1);
+                  selection.splice(index, 1);
                 }
               }
 
-            };
+            });
 
-            $scope.isRowSelected = function isRowSelected($row) {
-              var i = $scope.getRowSelectionIndex($row);
-              return !!(isnum(i) && 0 <= i);
-            };
+            $scope.isRowSelected = (function isRowSelected($row) {
+              var index = $scope.selectedRowIndex($row);
+              return !!(isnum(index) && 0 <= index);
+            });
 
-            $scope.isRowsSelected = function isRowsSelected() {
-              var $rows = $scope.tableview.rows.slice(0, $scope.tableview.request.limit);
-              if (!$rows.length || !$scope.tableview.selection.length) {
+            $scope.areRowsSelected = (function areRowsSelected() {
+
+              var tv = $scope.tableview, $rows = tv.rows.slice(0, tv.request.limit);
+
+              if (!$rows.length || !tv.selection.length) {
                 return false;
               }
+
               for (var i = 0; i < $rows.length; i += 1) {
                 if (!$scope.isRowSelected($rows[i])) {
                   return false;
                 }
               }
-              return true;
-            };
 
-            $scope.onSelectPageRows = function onSelectPageRows($event) {
-              var sign = $event.target.checked;
-              var $rows = $scope.tableview.rows.slice(0, $scope.tableview.request.limit);
+              return true;
+            });
+
+            $scope.onSelectPageRows = (function onSelectPageRows($event) {
+
+              var sign = $event.target.checked, tv = $scope.tableview, $rows = tv.rows.slice(0, tv.request.limit);
+
               for (var i = 0; i < $rows.length; i += 1) {
                 $scope.switchRowSelection($rows[i], sign);
               }
-            };
 
-            $scope.themeTemplateName = function themeTemplateName(name) {
+            });
+
+            $scope.themeTemplateName = (function themeTemplateName(name) {
               if ($scope.theme && name) {
                 name = ['tableview', $scope.theme, name].join('.');
                 return (isstr($templateCache.get(name)) ? name : void 0);
               }
-            };
+            });
 
-            $scope.defaultTemplateName = function defaultTemplateName(name) {
+            $scope.defaultTemplateName = (function defaultTemplateName(name) {
               return ['tableview', name].join('.');
-            };
+            });
 
-            $scope.templateName = function templateName(name, $index) {
+            $scope.templateName = (function templateName(name, $index) {
 
               // column.template
               // options.template
@@ -404,14 +411,18 @@
               // theme.template
               // default
 
-              var $0 = (isdef($index) && $scope.tableview.columns[$index] && $scope.tableview.columns[$index].template ? $scope.tableview.columns[$index].template : {});
-              var $1 = ($scope.tableview.template && isobj($scope.tableview.template) ? $scope.tableview.template : {});
-              var $2 = ($scope.$provider.template && isobj($scope.$provider.template) ? $scope.$provider.template : {});
+              var tv = $scope.tableview, tvtpl = tv.template, prtpl = $scope.$provider.template;
+              var cltpl = isdef($index) && tv.columns[$index] && tv.columns[$index].template;
+
+              var $0 = (cltpl ? cltpl : {});
+              var $1 = (tvtpl && isobj(tvtpl) ? tvtpl : {});
+              var $2 = (prtpl && isobj(prtpl) ? prtpl : {});
+
               var tpl = $0[name] || $1[name] || $2[name] || $scope.themeTemplateName(name) || $scope.defaultTemplateName(name);
 
               return (isstr($templateCache.get(tpl)) ? tpl : void 0);
 
-            };
+            });
 
             $scope.exec();
 
