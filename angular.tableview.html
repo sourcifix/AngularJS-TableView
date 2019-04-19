@@ -14,14 +14,13 @@
 <script type="text/ng-template" id="tableview.head.cell.select">
   <label><input
     type="checkbox"
-    class="hidden"
     ng-checked="isRowsSelected()"
     ng-click="onSelectPageRows($event)"
   /><i class="ui-checkbox"></i></label>
 </script>
 
 <script type="text/ng-template" id="tableview.body.cell.select">
-  <label><input type="checkbox" class="hidden" ng-checked="isRowSelected($row)" ng-click="switchRowSelection($row)" /><i class="ui-checkbox"></i></label>
+  <label><input type="checkbox" ng-checked="isRowSelected($row)" ng-click="switchRowSelection($row)" /><i class="ui-checkbox"></i></label>
 </script>
 
 <script type="text/ng-template" id="tableview.body.cell">{{$row[$column.field]}}</script>
@@ -79,12 +78,14 @@
               $column.name ? 'column-'+$column.name : ''
               }} {{
               $column.field ? 'column-'+$column.field : ''
+            }} {{
+              $column.sortable && $column.field ? 'sortable' : ''
+            }} {{
+              $column.filterable && $column.field ? 'filterable' : ''
             }}"
             ng-class="{
-              'sortable':$column.sortable && $column.field,
               'sortable-asc':$column.sorting == 'ASC',
               'sortable-desc':$column.sorting == 'DESC',
-              'filterable':$column.filterable && $column.field,
               'editable':$column.editable && $column.field
             }"
             ng-click="switchSort($column.field)"
