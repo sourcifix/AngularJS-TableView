@@ -1,0 +1,31 @@
+{
+
+  "parserOptions": {
+    "sourceType": "script",
+    "ecmaVersion": 5
+  },
+
+  "env": {
+    "browser": true,
+    "node": false,
+    "jest": false
+  },
+
+  "extends": [
+    "angular"
+  ],
+
+  "globals": {
+    "Promise": false,
+    "Symbol": false,
+    "Proxy": false
+  },
+
+  "rules": {
+    "quotes": [
+      2,
+      "single"
+    ]
+  }
+
+}
