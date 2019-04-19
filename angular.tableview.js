@@ -24,7 +24,7 @@
 
   var module = angular.module("tableview", []);
 
-  module.provider("$tableView", function () {
+  module.provider("$tableView", function tableViewProvider() {
 
     var that = this;
 
@@ -34,6 +34,7 @@
     };
 
   }).directive("tableviewAutofocus", function tableviewAutofocusDirective($timeout) {
+    // noinspection JSUnusedGlobalSymbols
     return {
       restrict: "A",
       link:     function ($scope, $element, $attributes) {
@@ -47,6 +48,30 @@
       }
     };
   }).directive("tableview", function tableviewDirective($compile, $http, $templateCache, $tableView) {
+
+    var isString = function isString(value) {
+      return ('' + value) === value;
+    };
+
+    var isUndefined = function isUndefined(value) {
+      return void 0 === value;
+    };
+
+    var isObject = function isObject(value) {
+      return null !== value && 'object' === typeof value;
+    };
+
+    var isBoolean = function isBoolean(value) {
+      return true === value || false === value;
+    };
+
+    var isFunction = function isFunction(value) {
+      return 'function' === typeof value;
+    };
+
+    var isNumber = function isNumber(value) {
+      return (value - 0) === value;
+    };
 
     var MODULE_NAME = "angular.tableview";
 
@@ -215,7 +240,7 @@
             }
 
             if (
-              "string" == typeof $scope.tableview.request.like[field]
+              isString($scope.tableview.request.like[field])
               &&
               !$scope.tableview.request.like[field].trim()
             ) {
@@ -235,21 +260,21 @@
               return {message: "", status: true};
             };
 
-            if (!column.editable || "object" !== typeof column.editable) {
+            if (!column.editable || !isObject(column.editable)) {
               $mode.validation = valid();
               return true;
-            } else if ("function" !== typeof column.editable.validate) {
+            } else if (!isFunction(column.editable.validate)) {
               column.editable.validate = valid;
             }
 
             var result = column.editable.validate(column, $row, column.field, $mode.value);
-            if ("boolean" === typeof result) {
+            if (isBoolean(result)) {
               result = result ? valid() : {message: "", status: false};
             }
 
-            result = (result && "object" === typeof result) ? result : {};
+            result = (result && isObject(result) ? result : {});
             result.status = !!result.status;
-            result.message = "string" === typeof result.message ? result.message : "";
+            result.message = isString(result.message) ? result.message : "";
             $mode.validation = result;
 
             return result.status;
@@ -267,13 +292,7 @@
               $mode.value = $row[column.field];
             }
 
-            if (
-              validation
-              && changed
-              && column.editable
-              && "object" === typeof column.editable
-              && "function" === typeof column.editable.change
-            ) {
+            if (validation && changed && isObject(column.editable) && isFunction(column.editable.change)) {
               column.editable.change(column, $row, column.field, $row[column.field]);
             }
 
@@ -302,11 +321,11 @@
 
           $scope.getRowSelectionIndex = function getRowSelectionIndex($row) {
             if (
-              "string" !== typeof $scope.tableview.selectableBy
+              isString($scope.tableview.selectableBy)
               ||
               !$scope.tableview.selectableBy.trim().length
               ||
-              "undefined" === typeof $row[$scope.tableview.selectableBy]
+              isUndefined($row[$scope.tableview.selectableBy])
             ) {
               return;
             }
@@ -314,7 +333,7 @@
             var key = $scope.tableview.selectableBy;
             var val = $row[$scope.tableview.selectableBy];
 
-            for (var i = 0; i < $scope.tableview.selection.length; i+=1) {
+            for (var i = 0; i < $scope.tableview.selection.length; i += 1) {
               if ($scope.tableview.selection[i][key] == val) {
                 return i * 1;
               }
@@ -327,11 +346,11 @@
           $scope.switchRowSelection = function switchRowSelection($row, sign) {
 
             var index = $scope.getRowSelectionIndex($row);
-            if ("number" !== typeof index) {
+            if (!isNumber(index)) {
               return;
             }
 
-            if ("boolean" === typeof sign) {
+            if (isBoolean(sign)) {
               if (index < 0 && sign) {
                 $scope.tableview.selection.push(angular.copy($row));
               } else if (index >= 0 && !sign) {
@@ -349,7 +368,7 @@
 
           $scope.isRowSelected = function isRowSelected($row) {
             var i = $scope.getRowSelectionIndex($row);
-            return !!("number" === typeof i && i >= 0);
+            return !!(isNumber(i) && 0 <= i);
           };
 
           $scope.isRowsSelected = function isRowsSelected() {
@@ -376,7 +395,7 @@
           $scope.themeTemplateName = function themeTemplateName(name) {
             if ($scope.theme && name) {
               name = ["tableview", $scope.theme, name].join(".");
-              return "string" === typeof $templateCache.get(name) ? name : undefined;
+              return isString($templateCache.get(name)) ? name : undefined;
             }
           };
 
@@ -392,16 +411,17 @@
             // theme.template
             // default
 
-            var $0 = "undefined" !== typeof $index && $scope.tableview.columns[$index] && $scope.tableview.columns[$index].template ? $scope.tableview.columns[$index].template : {};
-            var $1 = $scope.tableview.template && "object" === typeof $scope.tableview.template ? $scope.tableview.template : {};
-            var $2 = $scope.$provider.template && "object" === typeof $scope.$provider.template ? $scope.$provider.template : {};
+            var $0 = (!isUndefined($index) && $scope.tableview.columns[$index] && $scope.tableview.columns[$index].template ? $scope.tableview.columns[$index].template : {});
+            var $1 = ($scope.tableview.template && isObject($scope.tableview.template) ? $scope.tableview.template : {});
+            var $2 = ($scope.$provider.template && isObject($scope.$provider.template) ? $scope.$provider.template : {});
             var tpl = $0[name] || $1[name] || $2[name] || $scope.themeTemplateName(name) || $scope.defaultTemplateName(name);
 
-            return "string" === typeof $templateCache.get(tpl) ? tpl : undefined;
+            return (isString($templateCache.get(tpl)) ? tpl : undefined);
 
           };
 
           $scope.exec();
+
         };
       }
     };
