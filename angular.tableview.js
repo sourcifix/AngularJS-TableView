@@ -5,7 +5,7 @@
 */
 
 (function (root, factory) {
-  if (module && module.exports) {
+  if ('undefined' !== typeof module && 'undefined' !== typeof module.exports) {
     // CommonJS
     if (!angular) {
       factory(angular);
@@ -67,7 +67,7 @@
     }
   ).directive(
     'tableview',
-    function tableviewDirective($compile, $http, $templateCache, $tableView, $document) {
+    function tableviewDirective($compile, $http, $templateCache, $tableView) {
 
       // noinspection JSDeprecatedSymbols
       var
@@ -83,7 +83,7 @@
       var MODULE_NAME = 'angular.tableview';
 
       var modurl = function moduleUrl() {
-        var js = $document.querySelector('script[src*=\'' + MODULE_NAME + '\']');
+        var js = document.querySelector('script[src*=\'' + MODULE_NAME + '\']');
         return js ? js.src.replace(/[^\/]*$/, '') : void 0;
       };
 

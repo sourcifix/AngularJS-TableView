@@ -1,30 +1,37 @@
 {
     "name": "angular.tableview",
     "description": "AngularJS TableView",
-    "version": "1.1.0",
     "license": "MIT",
     "homepage": "https://github.com/w3core/AngularJS-TableView",
     "author": "Max Chuhryaev <w3core@gmail.com>",
+    "main": "./angular.tableview.js",
     "repository": {
-        "type": "git",
-        "url": "https://github.com/w3core/AngularJS-TableView.git"
-    },
-    "bugs": {
-        "url": "https://github.com/w3core/AngularJS-TableView/issues/"
+      "type": "git",
+      "url": "https://github.com/sourcifix/AngularJS-TableView.git"
     },
     "keywords": [
-        "tableview",
-        "grid",
-        "sort",
-        "multisort",
-        "filter",
-        "select",
-        "edit",
-        "validation",
-        "template",
-        "custom",
-        "fluid",
-        "angular",
-        "ui"
-    ]
-}
+      "tableview",
+      "grid",
+      "sort",
+      "multisort",
+      "filter",
+      "select",
+      "edit",
+      "validation",
+      "template",
+      "custom",
+      "fluid",
+      "angular",
+      "ui"
+    ],
+    "_release": "20cb80d5ae",
+    "_resolution": {
+      "type": "branch",
+      "branch": "master",
+      "commit": "20cb80d5ae6a9575ceb8dafad4782ca743f9bf0b"
+    },
+    "_source": "git://github.com/sourcifix/AngularJS-TableView.git",
+    "_target": "*",
+    "_originalSource": "git://github.com/sourcifix/AngularJS-TableView.git"
+  }
+  
