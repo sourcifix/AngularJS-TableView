@@ -424,24 +424,22 @@
   );
 
   // eslint-disable-next-line angular/definedundefined
-  if ('undefined' !== typeof module && 'undefined' !== typeof module.exports) {
+  if (typeof module !== 'undefined' && module.exports) {
     // CommonJS
-    if (angular) {
-      factory(angular);
-    } else {
+    // eslint-disable-next-line angular/definedundefined
+    if ('undefined' === typeof angular) {
       factory(require('angular'));
+    } else {
+      factory(angular);
     }
     module.exports = 'tableview';
+    // eslint-disable-next-line angular/typecheck-function
+  } else if ('function' === typeof define && define.amd) {
+    // AMD
+    define(['angular'], factory);
   } else {
-    // noinspection JSUnresolvedVariable
-    if ('function' === typeof define && define.amd) { // eslint-disable-line angular/typecheck-function
-      // AMD
-      // noinspection JSUnresolvedFunction
-      define(['angular'], factory);
-    } else {
-      // Global Variables
-      factory(G.angular);
-    }
+    // Global Variables
+    factory(G.angular);
   }
 
 })(this, document);
