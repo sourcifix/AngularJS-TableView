@@ -5,6 +5,7 @@
 */
 
 
+// noinspection ThisExpressionReferencesGlobalObjectJS
 (function (G, D) {
 
   var factory = (
@@ -423,23 +424,8 @@
 
   );
 
-  // eslint-disable-next-line angular/definedundefined
-  if (typeof module !== 'undefined' && module.exports) {
-    // CommonJS
-    // eslint-disable-next-line angular/definedundefined
-    if ('undefined' === typeof angular) {
-      factory(require('angular'));
-    } else {
-      factory(angular);
-    }
-    module.exports = 'tableview';
-    // eslint-disable-next-line angular/typecheck-function
-  } else if ('function' === typeof define && define.amd) {
-    // AMD
-    define(['angular'], factory);
-  } else {
-    // Global Variables
-    factory(G.angular);
-  }
+
+  // Global Variables
+  factory(G.angular);
 
 })(this, document);
